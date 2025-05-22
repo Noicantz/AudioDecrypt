@@ -1,0 +1,7 @@
+C:\Users\Administrator\KGMA2MP3\AudioDecryptRelease\AudioDecrypt.pdb
+C:\Users\Administrator\KGMA2MP3\AudioDecryptRelease\D3DCompiler_47_cor3.dll
+C:\Users\Administrator\KGMA2MP3\AudioDecryptRelease\PenImc_cor3.dll
+C:\Users\Administrator\KGMA2MP3\AudioDecryptRelease\PresentationNative_cor3.dll
+C:\Users\Administrator\KGMA2MP3\AudioDecryptRelease\vcruntime140_cor3.dll
+C:\Users\Administrator\KGMA2MP3\AudioDecryptRelease\wpfgfx_cor3.dll
+C:\Users\Administrator\KGMA2MP3\AudioDecryptRelease\AudioDecrypt.exe

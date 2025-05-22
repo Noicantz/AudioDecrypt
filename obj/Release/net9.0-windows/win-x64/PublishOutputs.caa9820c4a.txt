@@ -1,0 +1,2 @@
+C:\Users\Administrator\KGMA2MP3\bin\Release\net9.0-windows\win-x64\publish\AudioDecrypt.pdb
+C:\Users\Administrator\KGMA2MP3\bin\Release\net9.0-windows\win-x64\publish\AudioDecrypt.exe

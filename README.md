@@ -39,7 +39,7 @@ src/
 
 2. **编译步骤**
    ```bash
-   git clone https://github.com/你的用户名/KGMA2MP3.git
+   git clone https://github.com/Noicantz/AudioDecrypt.git
    cd KGMA2MP3
    dotnet build
    # 或者运行

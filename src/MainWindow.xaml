@@ -471,33 +471,19 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     
-                    <StackPanel Grid.Column="0" Orientation="Vertical">
-                        <TextBlock x:Name="txtStatus" VerticalAlignment="Center" Foreground="{StaticResource SecondaryTextColor}" Margin="0,0,0,8"/>
-                        <ProgressBar x:Name="progressDecryption" Style="{StaticResource ModernProgressBar}"/>
-                    </StackPanel>
+                    <!-- 状态文本 -->
+                    <TextBlock x:Name="txtStatus" Grid.Column="0" VerticalAlignment="Center" Foreground="{StaticResource SecondaryTextColor}"/>
                     
-                    <Border Grid.Column="1" Background="{StaticResource ErrorColor}" CornerRadius="4" Margin="0,0,10,0">
-                        <TextBlock x:Name="btnClearList" Text="清空列表" Foreground="White" 
-                                MouseDown="btnClearList_Click" Cursor="Hand" Padding="10,5">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Style.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="TextDecorations" Value="Underline"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </Border>
-                    
-                    <Border Grid.Column="2" Background="#F5F9FF" CornerRadius="4">
-                        <TextBlock Text="音乐解密工具 v1.1" Foreground="{StaticResource SecondaryTextColor}" 
-                                 FontSize="12" Padding="10,5"/>
-                    </Border>
+                    <!-- 清空列表按钮 - 改为更统一的按钮样式 -->
+                    <Button x:Name="btnClearList" Grid.Column="1" Content="清空列表" 
+                          Click="btnClearList_Click" 
+                          Style="{StaticResource FlatButton}"
+                          Background="{StaticResource ErrorColor}"
+                          Height="30"
+                          Padding="12,2"
+                          FontSize="12"/>
                 </Grid>
 
                 <!-- 拖放提示遮罩 -->

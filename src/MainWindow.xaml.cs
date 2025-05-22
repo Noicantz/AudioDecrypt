@@ -58,10 +58,11 @@ namespace AudioDecrypt
         /// </summary>
         private void AnimationTimer_Tick(object sender, EventArgs e)
         {
-            // 在此添加动画更新逻辑，例如进度条脉冲动画等
+            // 在此添加动画更新逻辑
             int dots = (int)((DateTime.Now - _lastDecryptTime).TotalSeconds % 4);
             string statusText = "解密中";
             for (int i = 0; i < dots; i++) statusText += ".";
+            
             txtStatus.Text = statusText;
         }
 
@@ -109,7 +110,6 @@ namespace AudioDecrypt
                 if (filesAdded)
                 {
                     txtStatus.Text = $"已添加 {openFileDialog.FileNames.Length} 个文件，准备就绪";
-                    AnimateProgressBar();
                 }
             }
         }
@@ -153,7 +153,6 @@ namespace AudioDecrypt
                     if (validFilesAdded > 0)
                     {
                         txtStatus.Text = $"已添加 {validFilesAdded} 个文件，准备就绪";
-                        AnimateProgressBar();
                     }
                 }
                 else
@@ -232,10 +231,6 @@ namespace AudioDecrypt
                     Directory.CreateDirectory(outputDir);
                 }
 
-                // 更新进度条
-                progressDecryption.Minimum = 0;
-                progressDecryption.Maximum = _decryptFiles.Count;
-                progressDecryption.Value = 0;
                 txtStatus.Text = "正在解密...";
                 
                 // 启动动画计时器
@@ -248,9 +243,6 @@ namespace AudioDecrypt
                 _animationTimer.Stop();
 
                 txtStatus.Text = $"解密完成，共处理 {_decryptFiles.Count} 个文件，输出到 {Path.GetFileName(outputDir)}";
-                
-                // 显示成功解密的动画效果
-                AnimateDecryptSuccess();
                 
                 // 显示完成消息
                 ShowMessage($"成功解密 {_decryptFiles.Count} 个文件！\n输出目录: {outputDir}", "操作成功", MessageBoxImage.Information);
@@ -285,9 +277,6 @@ namespace AudioDecrypt
                 txtFilePath.Text = string.Empty;
                 txtStatus.Text = "列表已清空，请添加文件";
                 UpdateUI();
-                
-                // 清空后显示动画
-                AnimateProgressBar(true);
             }
         }
 
@@ -305,6 +294,9 @@ namespace AudioDecrypt
                 
                 // 更新状态，所有文件重新标记为处理中
                 UpdateFileStatus(i, "处理中...");
+                
+                // 更新当前正在处理的文件信息
+                UpdateCurrentFileInfo(i + 1, _decryptFiles.Count, fileInfo.FileName);
 
                 try
                 {
@@ -325,19 +317,18 @@ namespace AudioDecrypt
                     // 更新状态为成功
                     UpdateFileStatus(i, "成功");
                     
-                    // 查找输出文件并更新
-                    string baseFileName = Path.GetFileNameWithoutExtension(fileInfo.FilePath);
-                    string[] possibleExtensions = { ".mp3", ".flac" };
+                    // 优化输出文件查找逻辑
+                    string outputFile = FindOutputFile(decryptor, outputDir, fileInfo.FilePath);
                     
-                    foreach (string ext in possibleExtensions)
+                    if (!string.IsNullOrEmpty(outputFile))
                     {
-                        string potentialFile = Path.Combine(outputDir, baseFileName + ext);
-                        if (File.Exists(potentialFile))
-                        {
-                            // 更新输出文件路径
-                            UpdateOutputFile(i, potentialFile);
-                            break;
-                        }
+                        // 更新输出文件路径
+                        UpdateOutputFile(i, outputFile);
+                    }
+                    else
+                    {
+                        // 找不到输出文件，使用默认文本
+                        UpdateOutputFile(i, "解密成功，但无法确定输出文件");
                     }
                     
                     successCount++;
@@ -351,15 +342,68 @@ namespace AudioDecrypt
                     Console.WriteLine($"解密文件 {fileInfo.FileName} 失败: {ex.Message}");
                     errorCount++;
                 }
-                
-                // 更新进度条
-                UpdateProgress(i + 1);
             }
             
             // 更新最终状态显示
             Dispatcher.Invoke(() => {
                 txtStatus.Text = $"解密完成: {successCount} 成功, {errorCount} 失败";
+                
+                // 重置窗口标题
+                Title = "音乐文件解密工具";
             });
+        }
+        
+        /// <summary>
+        /// 查找解密后的输出文件
+        /// </summary>
+        private string FindOutputFile(MusicDecryptorBase decryptor, string outputDir, string inputFilePath)
+        {
+            // 先尝试直接从NcmDecryptor中获取输出路径（如果是NcmDecryptor类型）
+            if (decryptor is NcmDecryptor ncmDecryptor && !string.IsNullOrEmpty(ncmDecryptor.OutputFilePath))
+            {
+                return ncmDecryptor.OutputFilePath;
+            }
+            
+            // 如果不是NcmDecryptor或无法获取，则进行推断
+            // 1. 查找最近修改的文件
+            DirectoryInfo dirInfo = new DirectoryInfo(outputDir);
+            if (dirInfo.Exists)
+            {
+                // 获取所有mp3和flac文件
+                FileInfo[] files = dirInfo.GetFiles("*.mp3").Concat(dirInfo.GetFiles("*.flac")).ToArray();
+                
+                // 按修改时间排序，获取最近修改的文件
+                FileInfo latestFile = files.OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
+                
+                if (latestFile != null && (DateTime.Now - latestFile.LastWriteTime).TotalSeconds < 10)
+                {
+                    // 如果最近修改的文件是在10秒内创建的，认为这是输出文件
+                    return latestFile.FullName;
+                }
+            }
+            
+            // 2. 使用基于输入文件名的推测
+            string baseFileName = Path.GetFileNameWithoutExtension(inputFilePath);
+            string[] possibleExtensions = { ".mp3", ".flac" };
+            
+            foreach (string ext in possibleExtensions)
+            {
+                // 尝试直接匹配文件名
+                string potentialFile = Path.Combine(outputDir, baseFileName + ext);
+                if (File.Exists(potentialFile))
+                {
+                    return potentialFile;
+                }
+                
+                // 尝试查找包含原文件名的文件
+                FileInfo[] matchingFiles = dirInfo.GetFiles($"*{baseFileName}*{ext}");
+                if (matchingFiles.Length > 0)
+                {
+                    return matchingFiles[0].FullName;
+                }
+            }
+            
+            return string.Empty;
         }
         
         /// <summary>
@@ -371,7 +415,15 @@ namespace AudioDecrypt
             {
                 if (index >= 0 && index < _decryptFiles.Count)
                 {
-                    _decryptFiles[index].OutputFile = Path.GetFileName(outputFile);
+                    // 如果是完整路径，只显示文件名
+                    if (File.Exists(outputFile))
+                    {
+                        _decryptFiles[index].OutputFile = Path.GetFileName(outputFile);
+                    }
+                    else
+                    {
+                        _decryptFiles[index].OutputFile = outputFile; // 可能是一个状态消息
+                    }
                     dgDecryptList.Items.Refresh();
                 }
             });
@@ -413,13 +465,14 @@ namespace AudioDecrypt
         }
 
         /// <summary>
-        /// 更新进度条
+        /// 更新当前处理的文件信息
         /// </summary>
-        private void UpdateProgress(int value)
+        private void UpdateCurrentFileInfo(int current, int total, string fileName)
         {
             Dispatcher.Invoke(() =>
             {
-                progressDecryption.Value = value;
+                // 在标题后显示当前处理文件的进度
+                Title = $"音乐文件解密工具 - 正在处理: [{current}/{total}] {fileName}";
             });
         }
 
@@ -451,14 +504,10 @@ namespace AudioDecrypt
             // 只有在未解密且有文件时才能启用解密按钮
             btnStartDecrypt.IsEnabled = !_isDecrypting && _decryptFiles.Count > 0;
             
-            // 更新解密状态显示
-            if (_isDecrypting)
+            // 重置标题
+            if (!_isDecrypting && !Title.Contains("-"))
             {
-                progressDecryption.IsIndeterminate = true;
-            }
-            else
-            {
-                progressDecryption.IsIndeterminate = false;
+                Title = "音乐文件解密工具";
             }
         }
         
@@ -478,91 +527,6 @@ namespace AudioDecrypt
             System.Windows.MessageBox.Show(this, message, title, button, icon);
         }
         
-        /// <summary>
-        /// 进度条动画
-        /// </summary>
-        private void AnimateProgressBar(bool reset = false)
-        {
-            DoubleAnimation animation = new DoubleAnimation();
-            
-            if (reset)
-            {
-                animation.From = progressDecryption.Value;
-                animation.To = 0;
-            }
-            else
-            {
-                animation.From = 0;
-                animation.To = 100;
-            }
-            
-            animation.Duration = TimeSpan.FromSeconds(0.5);
-            animation.AutoReverse = true;
-            
-            progressDecryption.BeginAnimation(System.Windows.Controls.ProgressBar.ValueProperty, animation);
-            
-            // 0.5秒后重置进度条
-            DispatcherTimer timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromSeconds(1);
-            timer.Tick += (s, args) =>
-            {
-                progressDecryption.BeginAnimation(System.Windows.Controls.ProgressBar.ValueProperty, null);
-                progressDecryption.Value = 0;
-                timer.Stop();
-            };
-            timer.Start();
-        }
-        
-        /// <summary>
-        /// 解密成功动画
-        /// </summary>
-        private void AnimateDecryptSuccess()
-        {
-            // 创建绿色闪烁效果
-            SolidColorBrush originalBrush = progressDecryption.Foreground as SolidColorBrush;
-            
-            ColorAnimation colorAnimation = new ColorAnimation();
-            // 修复类型转换
-            Color successColor = Colors.Green;
-            try 
-            {
-                successColor = (Color)FindResource("SuccessColor");
-            }
-            catch
-            {
-                // 如果无法获取资源，使用预定义的绿色
-                successColor = Color.FromRgb(76, 175, 80);
-            }
-            
-            colorAnimation.From = successColor;
-            colorAnimation.To = Colors.White;
-            colorAnimation.Duration = TimeSpan.FromSeconds(0.3);
-            colorAnimation.AutoReverse = true;
-            colorAnimation.RepeatBehavior = new RepeatBehavior(3);
-            
-            SolidColorBrush animationBrush = new SolidColorBrush(successColor);
-            progressDecryption.Foreground = animationBrush;
-            animationBrush.BeginAnimation(SolidColorBrush.ColorProperty, colorAnimation);
-            
-            // 进度条动画
-            DoubleAnimation animation = new DoubleAnimation();
-            animation.From = 0;
-            animation.To = progressDecryption.Maximum;
-            animation.Duration = TimeSpan.FromSeconds(0.5);
-            
-            progressDecryption.BeginAnimation(System.Windows.Controls.ProgressBar.ValueProperty, animation);
-            
-            // 恢复原始颜色
-            DispatcherTimer timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromSeconds(2);
-            timer.Tick += (s, args) =>
-            {
-                progressDecryption.Foreground = originalBrush;
-                timer.Stop();
-            };
-            timer.Start();
-        }
-
         /// <summary>
         /// 拖放入口事件
         /// </summary>
@@ -703,7 +667,6 @@ namespace AudioDecrypt
                     }
                     
                     txtStatus.Text = $"已添加 {validFilesAdded} 个文件，准备就绪";
-                    AnimateProgressBar();
                     
                     // 播放添加成功的动画
                     AnimateDropSuccess();

@@ -1,5 +1,0 @@
-C:\Users\Administrator\KGMA2MP3\bin\Release\net9.0-windows\publish\AudioDecrypt.exe
-C:\Users\Administrator\KGMA2MP3\bin\Release\net9.0-windows\publish\AudioDecrypt.dll
-C:\Users\Administrator\KGMA2MP3\bin\Release\net9.0-windows\publish\AudioDecrypt.deps.json
-C:\Users\Administrator\KGMA2MP3\bin\Release\net9.0-windows\publish\AudioDecrypt.runtimeconfig.json
-C:\Users\Administrator\KGMA2MP3\bin\Release\net9.0-windows\publish\AudioDecrypt.pdb

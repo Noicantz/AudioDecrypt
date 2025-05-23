@@ -1,6 +1,6 @@
-# 音乐文件解密工具 (KGMA2MP3)
+# 音乐文件解密工具
 
-这是一个简单易用的音乐文件解密工具，支持多种加密格式的音乐文件转换为标准MP3/FLAC格式。
+这是一个简单易用的音乐文件解密工具，支持网易云、酷狗加密格式的音乐文件转换为标准MP3/FLAC格式。
 
 ## 支持的格式
 
@@ -39,8 +39,8 @@ src/
 
 2. **编译步骤**
    ```bash
-   git clone https://github.com/你的用户名/KGMA2MP3.git
-   cd KGMA2MP3
+   git clone https://github.com/Noicantz/AudioDecrypt.git
+   cd AudioDecrypt
    dotnet build
    # 或者运行
    dotnet run
